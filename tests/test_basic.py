@@ -21,8 +21,10 @@ class MyTestCase(unittest.TestCase):
 
     def test_load(self):
         spc = SimplePDFCreate()
-        doc = spc.load('test.yaml')
-        doc.append(SPCTable())
+        # doc = spc.load('test.yaml')
+        # doc.append(SPCTable())
+        # doc = spc.load('ИМЕС.00300-04 51-XX.yaml')
+        doc = spc.load('rp_119_24.yaml')
         doc.save()
         # font = {'Times New Roman': 'Times New Roman.ttf'}
         # doc = spc.create_document('test.pdf', font)

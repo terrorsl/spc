@@ -1,0 +1,27 @@
+spc:
+  config:
+    standard: "g105_no_border"
+#    standard: "g105"
+    output: "Протокол ФИ DIM887 РП_119_24.pdf"
+    font:
+      family: "Times New Roman"
+      size: 12
+      fonts: [
+        {name: "Times New Roman", filename: "Times New Roman.ttf", type: "normal"},
+        {name: "Times New Roman Bold", filename: "Times New Roman Bold.ttf", type: "bold"},
+        {name: "Times New Roman Italic", filename: "Times New Roman Italic.ttf", type: "italic"},
+      ]
+    table_of_content: "Содержание"
+  title:
+    company: "ЗАО «НПФ «ДОЛОМАНТ»"
+    caption: "ПРОТОКОЛ ПРЕДВАРИТЕЛЬНЫХ ИСПЫТАНИЙ\n№ РП_119_24"
+    doc_type: "Микропрограмма модуля DIM887\nПротокол функционального тестирования"
+    approve: {name: "А.В. Локотков", job_name: "Главный конструктор средств\nпромышленной автоматики\nЗАО «НПФ «ДОЛОМАНТ»"}
+#    approve: "ИМЕС.00300-04 51-ЛУ"
+    agrees: [
+      {name: "П.В. Иванников", job_name: "Руководитель отдела"},
+      {name: "С.В. Торубаров", job_name: "Руководитель проекта"},
+      {name: "В.И. Ширяев", job_name: "Инженер-программист"}
+    ]
+  items:
+    - {type: "markdown", name: "Протокол ФИ DIM887 РП_119_24.md"}
