@@ -5,7 +5,8 @@ from reportlab.lib.units import mm
 from reportlab.platypus import PageTemplate, Frame, Paragraph, PageBreak, Table, TableStyle
 from reportlab.lib.enums import TA_LEFT, TA_CENTER
 
-from spc.standard.doc import SPCDocument, SPCChapter, SPCTable, SPCTitle, TitleApprove, SPCList
+from spc.spc_yaml import TitleApprove
+from spc.standard.doc import SPCDocument, SPCChapter, SPCTable, SPCTitle, SPCList
 
 
 class G105Title(SPCTitle):
@@ -23,7 +24,7 @@ class G105Title(SPCTitle):
         else:
             data = [['СОГЛАСОВАНО', 'УТВЕРЖДАЮ'],
                     [self.__agrees[0].job_name, self.__approve.job_name],
-                    [f'_________ {self.__agrees[0].name}', f'_________ {self.__approve.name}'],
+                    [f'__________ {self.__agrees[0].name}', f'__________ {self.__approve.name}'],
                     ['(подпись)', '(подпись)']]
         approve = Table(data, hAlign='CENTER', colWidths=(A4[0] - 40 * mm)/2, spaceAfter=10 * mm, style=TableStyle(
             [
@@ -41,7 +42,7 @@ class G105Title(SPCTitle):
             for index in range(1, len(self.__agrees)-1, 2):
                 if len(self.__agrees[index+1].job_name):
                     data.append([self.__agrees[index].job_name, self.__agrees[index + 1].job_name])
-                    data.append([f'_________ {self.__agrees[index].name}', f'_________ {self.__agrees[index+1].name}'])
+                    data.append([f'__________ {self.__agrees[index].name}', f'__________ {self.__agrees[index+1].name}'])
                     data.append(['(подпись)', '(подпись)'])
                 else:
                     data.append([self.__agrees[index].job_name, ''])

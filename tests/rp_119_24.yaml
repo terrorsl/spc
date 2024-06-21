@@ -1,6 +1,7 @@
 spc:
   config:
-    standard: "g105_no_border"
+    standard: "g19"
+#    standard: "g105_no_border"
 #    standard: "g105"
     output: "Протокол ФИ DIM887 РП_119_24.pdf"
     font:
@@ -25,3 +26,5 @@ spc:
     ]
   items:
     - {type: "markdown", name: "Протокол ФИ DIM887 РП_119_24.md"}
+  appendixes:
+    - {type: "markdown", name: "Протокол ФИ DIM887 РП_119_24.md", caption: "Пример приложения"}

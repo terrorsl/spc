@@ -7,6 +7,7 @@ import reportlab.platypus
 import yaml
 from pydantic import BaseModel, Field
 from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
 from reportlab.pdfbase import pdfmetrics
@@ -14,7 +15,7 @@ from reportlab.pdfbase.pdfmetrics import registerFontFamily
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import BaseDocTemplate, Paragraph, Image, PageBreak, Table, TableStyle
 from reportlab.platypus.tableofcontents import TableOfContents
-from reportlab.lib.enums import TA_JUSTIFY, TA_CENTER
+from reportlab.lib.enums import TA_JUSTIFY, TA_CENTER, TA_LEFT
 
 
 class SPCItem(ABC):
@@ -54,29 +55,37 @@ class SPCItem(ABC):
         return text
 
 
-class SCPImage(SPCItem):
-    def __init__(self, caption, filename, reference):
-        self.__caption = caption
+class SPCImage(SPCItem):
+    def __init__(self, caption, filename, reference, image_index):
+        super().__init__()
+        self.caption = caption
         self.__filename = filename
-        self.__reference = reference
+        self.reference = reference
+        self.caption_alignment = TA_LEFT
+        self.image_index = image_index
 
     def build(self, font_name, font_size):
-        style = ParagraphStyle(name='', fontName=font_name)
-        caption = f''
-        return [Image(filename=self.__filename), Paragraph(caption)]
+        style = ParagraphStyle(name='', fontName=font_name, fontSize=font_size, alignment=self.caption_alignment)
+        return [Paragraph(f'<a name="{self.reference}"/>', style=style),
+                Image(filename=self.__filename), Paragraph(self.caption, style=style)]
+
+    def replace_special(self):
+        pass
 
 
 class SPCList(SPCItem):
-    def __init__(self, start, afterbullet='.', is_letter=False, is_sub_list_index=0):
-        super().__init__()
+    def __init__(self, start, afterbullet='.', is_letter=False, is_sub_list_index=0, on_replace=None):
+        super().__init__(on_replace)
         self.__items = []
         self.__start = start
         self.__after = afterbullet
         self.__is_letter = is_letter
         self.__sub_list_index = is_sub_list_index
+        self.leftIndent = 0
 
     def replace_special(self):
-        pass
+        for item in self.__items:
+            item.replace_special()
 
     @property
     def sub_list_index(self):
@@ -96,10 +105,12 @@ class SPCList(SPCItem):
                                fontSize=font_size,
                                # alignment=TA_CENTER,
                                bulletIndent=15 * mm + (15 * mm * self.__sub_list_index),
+                               firstLineIndent=-15 * mm + (15 * mm * self.__sub_list_index),
                                bulletFontName=font_name,
                                bulletFontSize=font_size,
                                # leading=22,
-                               spaceAfter=6)
+                               spaceAfter=6,
+                               leftIndent=self.leftIndent)
         index = 0
         for item in self.__items:
             if isinstance(item, SPCParagraph):
@@ -119,86 +130,18 @@ class SPCList(SPCItem):
 
 class SPCTable(SPCItem):
     def __init__(self, header, table_index, format_columns):
-        # super().__init__()
+        super().__init__()
         self.__header = header
         self.__columns = format_columns
-        self.__data = [header]
+        self.__data = [header] if header else []
         self.__caption = ''
         self.__label = '__'
         self.__index = table_index
-        # self.__header = ['%', '1', '2', '3', 'День', 'Месяц']
-        # self.__columns = ['str', 'color', 'str', 'str', 'int', 'span']
-        # self.__data = [
-        #     ['%', 'Время труда и отдыха', 'Самочувствие', 'Предкпреждение', 'День', 'Месяц'],
-        #     [56, 'yellow', '2', '3', 1, 'Январь'],
-        #     [56, 'yellow', '2', '3', 2, 'Январь'],
-        #     [56, 'yellow', '2', '3', 3, 'Январь'],
-        #     [59, 'yellow', '2', '3', 4, 'Январь'],
-        #     [59, 'yellow', '2', '3', 5, 'Январь'],
-        #     [67, 'green', '2', '3', 6, 'Январь'],
-        #     [67, 'green', '2', '3', 7, 'Январь'],
-        #     [67, 'green', '2', '3', 8, 'Январь'],
-        #     [67, 'green', '2', '3', 9, 'Январь'],
-        #     [67, 'green', '2', '3', 10, 'Январь'],
-        #     [67, 'green', '2', '3', 11, 'Январь'],
-        #     [67, 'green', '2', '3', 12, 'Январь'],
-        #     [67, 'green', '2', '3', 13, 'Январь'],
-        #     [67, 'green', '2', '3', 14, 'Январь'],
-        #     [67, 'green', '2', '3', 15, 'Январь'],
-        #     [67, 'green', '2', '3', 16, 'Январь'],
-        #     [67, 'green', '2', '3', 17, 'Январь'],
-        #     [67, 'green', '2', '3', 18, 'Январь'],
-        #     [67, 'green', '2', '3', 19, 'Январь'],
-        #     [67, 'green', '2', '3', 20, 'Январь'],
-        #     [67, 'green', '2', '3', 21, 'Январь'],
-        #     [81, 'darkgreen', '2', '3', 22, 'Январь'],
-        #     [81, 'darkgreen', '2', '3', 23, 'Январь'],
-        #     [81, 'darkgreen', '2', '3', 24, 'Январь'],
-        #     [81, 'darkgreen', '2', '3', 25, 'Январь'],
-        #     [81, 'darkgreen', '2', '3', 26, 'Январь'],
-        #     [81, 'darkgreen', '2', '3', 27, 'Январь'],
-        #     [81, 'darkgreen', '2', '3', 28, 'Январь'],
-        #     [81, 'darkgreen', '2', '3', 29, 'Январь'],
-        #     [81, 'darkgreen', '2', '3', 30, 'Январь'],
-        #     [81, 'darkgreen', '2', '3', 31, 'Январь'],
-        #     [81, 'darkgreen', '2', '3', 1, 'Февраль'],
-        #     [81, 'darkgreen', '2', '3', 2, 'Февраль'],
-        #     [81, 'darkgreen', '2', '3', 3, 'Февраль'],
-        #     [81, 'darkgreen', '2', '3', 4, 'Февраль'],
-        #     [81, 'darkgreen', '2', '3', 5, 'Февраль'],
-        #     [81, 'darkgreen', '2', '3', 6, 'Февраль'],
-        #     [81, 'darkgreen', '2', '3', 7, 'Февраль'],
-        #     [81, 'darkgreen', '2', '3', 8, 'Февраль'],
-        #     [81, 'darkgreen', '2', '3', 9, 'Февраль'],
-        #     [81, 'darkgreen', '2', '3', 10, 'Февраль'],
-        #     [81, 'darkgreen', '2', '3', 11, 'Февраль'],
-        #     [81, 'darkgreen', '2', '3', 12, 'Февраль'],
-        #     [81, 'darkgreen', '2', '3', 13, 'Февраль'],
-        #     [81, 'darkgreen', '2', '3', 14, 'Февраль'],
-        #     [81, 'darkgreen', '2', '3', 15, 'Февраль'],
-        #     [81, 'darkgreen', '2', '3', 16, 'Февраль'],
-        #     [81, 'darkgreen', '2', '3', 17, 'Февраль'],
-        #     [81, 'darkgreen', '2', '3', 18, 'Февраль'],
-        #     [81, 'darkgreen', '2', '3', 19, 'Февраль'],
-        #     [81, 'darkgreen', '2', '3', 20, 'Февраль'],
-        #     [81, 'darkgreen', '2', '3', 21, 'Февраль'],
-        #     [81, 'darkgreen', '2', '3', 22, 'Февраль'],
-        #     [81, 'darkgreen', '2', '3', 23, 'Февраль'],
-        #     [81, 'darkgreen', '2', '3', 24, 'Февраль'],
-        #     [81, 'darkgreen', '2', '3', 25, 'Февраль'],
-        #     [81, 'darkgreen', '2', '3', 26, 'Февраль'],
-        #     [81, 'darkgreen', '2', '3', 27, 'Февраль'],
-        #     [81, 'darkgreen', '2', '3', 28, 'Февраль'],
-        #     [81, 'darkgreen', '2', '3', 29, 'Февраль'],
-        #     [81, 'darkgreen', '2', '3', 1, 'Март'],
-        #     [81, 'darkgreen', '2', '3', 2, 'Март'],
-        #     [81, 'darkgreen', '2', '3', 3, 'Март'],
-        #     [69, 'green', '2', '3', 4, 'Март'],
-        #     [69, 'green', '2', '3', 5, 'Март'],
-        #     [69, 'green', '2', '3', 6, 'Март'],
-        #     [69, 'green', '2', '3', 7, 'Март'],
-        #     [69, 'green', '2', '3', 8, 'Март'],
-        # ]
+        self.spans = []
+
+    def append_span(self, start: set, end: set):
+        val = (start, end)
+        self.spans.append(val)
 
     def append(self, row):
         self.__data.append(row)
@@ -214,6 +157,10 @@ class SPCTable(SPCItem):
     @property
     def table_index(self):
         return self.__index
+
+    @table_index.setter
+    def table_index(self, value):
+        self.__index = value
 
     def replace_special(self):
         pass
@@ -237,6 +184,11 @@ class SPCTable(SPCItem):
             ('ALIGN', (0, 0), (-1, -1), 'CENTER')
             # ('VALIGN', (5, 0), (5, -1), 'MIDDLE')
         ])
+
+        for span in self.spans:
+            start = (span[0][1], span[0][0])
+            end = (span[1][1], span[1][0])
+            table_style.add('SPAN', start, end)
 
         for col, cvalue in enumerate(self.__columns):
             if cvalue == 'color':
@@ -314,7 +266,9 @@ class SPCParagraph(SPCItem):
         result = self.find_special(self.__text)
         if len(result):
             return result
-        style = ParagraphStyle(name="text", fontName=font_name, fontSize=font_size, firstLineIndent=self.__indent)
+        style = ParagraphStyle(name="text", fontName=font_name, fontSize=font_size,
+                               firstLineIndent=self.__indent,
+                               spaceAfter=6)
         return [reportlab.platypus.Paragraph(self.__text, style=style)]
 
 
@@ -324,6 +278,8 @@ class SPCChapter(SPCItem):
         self.__text = text
         self.__align = alignment
         self.__indent = 0
+        self.space_before = 10 * mm
+        self.space_after = 10 * mm
 
     @property
     def indent(self):
@@ -343,8 +299,8 @@ class SPCChapter(SPCItem):
 
     def build(self, font_name, font_size):
         style = ParagraphStyle(name=f'Heading{self.__level}', fontName=font_name, fontSize=font_size,
-                               spaceBefore=5 * mm,
-                               spaceAfter=5 * mm,
+                               spaceBefore=self.space_before,
+                               spaceAfter=self.space_after,
                                alignment=self.__align,
                                leftIndent=self.__indent
                                )
@@ -352,6 +308,36 @@ class SPCChapter(SPCItem):
         item = Paragraph(f'<b>{self.__text}</b><a name="{bn}"/>', style=style)
         item._bookmarkName = bn
         return [item]
+
+
+class SPCAppendix(SPCItem):
+    def __init__(self, name, caption, type):
+        super().__init__()
+        self.__name = name
+        self.__caption = caption
+        self.__type = type
+
+    def replace_special(self):
+        pass
+
+    def build(self, font_name, font_size):
+        bn = sha1(self.__name.encode()).hexdigest()
+        style = ParagraphStyle(name="appendix", fontName=font_name, fontSize=font_size, alignment=TA_CENTER)
+        text = f'<b>{self.__name}</b><br/>({self.__type})<br/>{self.__caption}<a name="{bn}"/>'
+        item = Paragraph(text, style=style)
+        item._bookmarkName = bn
+        return [item]
+
+
+class SPCPagebreak(SPCItem):
+    def __init__(self):
+        super().__init__()
+
+    def replace_special(self):
+        pass
+
+    def build(self, font_name, font_size):
+        return [PageBreak()]
 
 
 class SPCTableOfContent(SPCItem):
@@ -374,54 +360,6 @@ class SPCTableOfContent(SPCItem):
 class SPCPageTemplate:
     def __init__(self, id, pagesize):
         self.__page_template = reportlab.platypus.PageTemplate(id, pagesize=pagesize)
-
-
-class Font(BaseModel):
-    name: str
-    filename: str
-    type: Literal['normal', 'bold', 'italic']
-
-
-class FontFamily(BaseModel):
-    family: str
-    size: int
-    fonts: List[Font]
-
-
-class Config(BaseModel):
-    standard: Literal['g105', 'g105_no_border', 'simple']
-    output: str
-    font: FontFamily
-    table_of_content: Optional[str] = ''
-
-
-class Markdown(BaseModel):
-    name: str
-
-
-class Item(BaseModel):
-    type: Literal['image', 'markdown']
-    name: str
-
-
-class TitleApprove(BaseModel):
-    name: str
-    job_name: str
-
-
-class Title(BaseModel):
-    caption: str
-    company: str
-    doc_type: str
-    approve: Union[TitleApprove, str]
-    agrees: List[TitleApprove]
-
-
-class SPC(BaseModel):
-    config: Config = Field()
-    title: Title
-    # custom_title: str
-    items: List[Item]
 
 
 class SPCDocument(ABC, BaseDocTemplate):
@@ -462,6 +400,12 @@ class SPCDocument(ABC, BaseDocTemplate):
                 level = 0
             elif style == 'Heading2':
                 level = 1
+            elif style == 'appendix':
+                level = 0
+                start = text.find('(')
+                if start != -1:
+                    end = text.find(')')
+                    text = text.replace(text[start: end+1], ' ')
             else:
                 return
             bn = getattr(flowable, '_bookmarkName', None)
@@ -483,6 +427,8 @@ class SPCDocument(ABC, BaseDocTemplate):
         if self.check(item):
             if isinstance(item, SPCTable):
                 self.__params['tables'][item.label] = item.table_index
+            elif isinstance(item, SPCImage):
+                self.__params['images'][item.reference] = item.image_index
             self.__items.append(item)
 
     def on_replace(self, label):
