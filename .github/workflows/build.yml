@@ -69,7 +69,7 @@ jobs:
           pip install setuptools wheel pyinstaller
           pip install -r requirements.txt
           python setup.py bdist_wheel
-          pip install spc-0.3.0-py3-none-any.whl
+          pip install dist/spc-0.3.0-py3-none-any.whl
           # pyinstaller --onefile --name spc --add-data=font;spc/standard --hidden-import=spc ./spc_cmd/main.py
           pyinstaller --name spc ${{matrix.PYINSTALLER}} --hidden-import=spc ./spc_cmd/main.py
       - name: Upload artifact
