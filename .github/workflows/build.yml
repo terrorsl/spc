@@ -53,7 +53,7 @@ jobs:
             OUTPUT_NAME: spc
             PYINSTALLER: --add-data=font:spc/standard
           - os: windows-latest
-            OUTPUT_NAME: spc.exe
+            OUTPUT_NAME: spc
             PYINSTALLER: --add-data=font:spc/standard
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
