@@ -54,7 +54,7 @@ jobs:
             PYINSTALLER: --add-data=font:spc/standard
           - os: windows-latest
             OUTPUT_NAME: spc.exe
-            PYINSTALLER: --add-data=font;spc/standard
+            PYINSTALLER: --add-data=font:spc/standard
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
