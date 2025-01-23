@@ -19,13 +19,17 @@ class MyTestCase(unittest.TestCase):
     #     doc.save()
     #     # self.assertEqual(True, False)  # add assertion here
 
+    # def test_g105(self):
+    #     spc = SimplePDFCreate()
+    #     doc = spc.load('ИМЕС.00300-04 51-03_g2.yaml')
+    #     doc.save()
+
     def test_load(self):
         spc = SimplePDFCreate()
-        spc.print_scheme()
         # doc = spc.load('test.yaml')
         # doc.append(SPCTable())
-        # doc = spc.load('ИМЕС.00300-04 51-XX.yaml')
-        doc = spc.load('ИМЕС.00300-04 51-03.yaml')
+        doc = spc.load('ИМЕС.00300-04 51-XX.yaml')
+        # doc = spc.load('ИМЕС.00300-03_01.yaml')
         doc.save()
         # font = {'Times New Roman': 'Times New Roman.ttf'}
         # doc = spc.create_document('test.pdf', font)
