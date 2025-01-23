@@ -92,6 +92,7 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           tag: ${{needs.tag_version.outputs.new_tag}}
+          artifacts: dist/${{matrix.OUTPUT_NAME}}
           #name: Release ${{ needs.tag_version.outputs.new_tag }}
   #     - name: Upload release assets
   #       uses: actions/upload-release-asset@v1
