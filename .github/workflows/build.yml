@@ -103,5 +103,5 @@ jobs:
         with:
           upload_url: ${{ needs.tag_version.outputs.upload_url }}
           asset_name: '${{runner.os}}-${{matrix.OUTPUT_NAME}}'
-          asset_path: 'dist/spc_${{matrix.os}}'
+          asset_path: 'dist/spc_${{matrix.os}}.zip'
           asset_content_type: application/zip
