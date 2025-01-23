@@ -34,7 +34,7 @@ jobs:
           with:
               github_token: ${{ secrets.GITHUB_TOKEN }}
         - name: Create release
-            id: release
+          id: release
           uses: ncipollo/release-action@v1
           with:
             tag: ${{tag_version.outputs.new_tag}}
