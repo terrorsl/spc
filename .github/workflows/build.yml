@@ -88,7 +88,7 @@ jobs:
       - name: Create release
         uses: ncipollo/release-action@v1
         with:
-          tag: ${{tag_version.tag_version.output.new_tag}}
+          tag: ${{tag_version.steps.tag_version.output.new_tag}}
           name: Release ${{ tag_version.tag_version.outputs.new_tag }}
   #     - name: Upload release assets
   #       uses: actions/upload-release-asset@v1
