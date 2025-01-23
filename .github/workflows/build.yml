@@ -88,7 +88,11 @@ jobs:
           pip install dist/spc-0.3.0-py3-none-any.whl
           # pyinstaller --onefile --name spc --add-data=font;spc/standard --hidden-import=spc ./spc_cmd/main.py
           pyinstaller --name spc ${{matrix.PYINSTALLER}} --hidden-import=spc ./spc_cmd/main.py
-          zip -r spc_${{matrix.os}}.zip dist/${{matrix.OUTPUT_NAME}}
+          # zip -r spc_${{matrix.os}}.zip dist/${{matrix.OUTPUT_NAME}}
+      - name: Zip
+        uses: montudor/action-zip@v1
+        with: 
+          args: zip -qq -r spc_${{matrix.os}}.zip dist/${{matrix.OUTPUT_NAME}}
       #- name: Upload artifact
       #  id: artifacts
       #  uses: actions/upload-artifact@v4
@@ -102,6 +106,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.tag_version.outputs.upload_url }}
-          asset_name: '${{runner.os}}-${{matrix.OUTPUT_NAME}}'
+          asset_name: '${{runner.os}}-${{matrix.OUTPUT_NAME}}.zip'
           asset_path: 'spc_${{matrix.os}}.zip'
           asset_content_type: application/zip
