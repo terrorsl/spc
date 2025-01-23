@@ -88,13 +88,14 @@ jobs:
           pip install dist/spc-0.3.0-py3-none-any.whl
           # pyinstaller --onefile --name spc --add-data=font;spc/standard --hidden-import=spc ./spc_cmd/main.py
           pyinstaller --name spc ${{matrix.PYINSTALLER}} --hidden-import=spc ./spc_cmd/main.py
-      - name: Upload artifact
-        id: artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: spc_${{matrix.os}}
-          path: dist/${{matrix.OUTPUT_NAME}}
-          #name: Release ${{ needs.tag_version.outputs.new_tag }}
+          zip -r spc_${{matrix.PYINSTALLER}}.zip dist/${{matrix.OUTPUT_NAME}}
+      #- name: Upload artifact
+      #  id: artifacts
+      #  uses: actions/upload-artifact@v4
+      #  with:
+      #    name: spc_${{matrix.os}}
+      #    path: dist/${{matrix.OUTPUT_NAME}}
+      #    #name: Release ${{ needs.tag_version.outputs.new_tag }}
       - name: Upload release assets
         uses: actions/upload-release-asset@v1
         env:
@@ -102,5 +103,5 @@ jobs:
         with:
           upload_url: ${{ needs.tag_version.outputs.upload_url }}
           asset_name: '${{runner.os}}-${{matrix.OUTPUT_NAME}}'
-          asset_path: ${{steps.artifacts.outputs.artifact-url}} #'./dist/${{matrix.OUTPUT_NAME}}'
+          asset_path: './dist/spc_${{matrix.OUTPUT_NAME}}'
           asset_content_type: application/zip
