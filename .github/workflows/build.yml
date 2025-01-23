@@ -26,13 +26,18 @@ jobs:
   tag_version:
     runs-on: ubuntu-latest
     outputs:
-        new_tag: ${{steps.tag_version.outputs.new_tag}}
+        upload_url: ${{steps.release.outputs.artifact-url}}
     steps:
-        - name: tag
+        - name: create tag
           uses: mathieudutour/github-tag-action@v6.2
           id: tag_version
           with:
               github_token: ${{ secrets.GITHUB_TOKEN }}
+        - name: Create release
+            id: release
+          uses: ncipollo/release-action@v1
+          with:
+            tag: ${{tag_version.outputs.new_tag}}
   # create_release:
   #   name: Create Release
   #   runs-on: ubuntu-latest
@@ -89,18 +94,13 @@ jobs:
         with:
           name: spc_${{matrix.os}}
           path: dist/${{matrix.OUTPUT_NAME}}
-      - name: Create release
-        uses: ncipollo/release-action@v1
-        with:
-          tag: ${{needs.tag_version.outputs.new_tag}}
-          artifacts: ${{steps.artifacts.artifact-url}}
           #name: Release ${{ needs.tag_version.outputs.new_tag }}
-  #     - name: Upload release assets
-  #       uses: actions/upload-release-asset@v1
-  #       env:
-  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  #       with:
-  #         upload_url: ${{ needs.create_release.outputs.upload_url }}
+      - name: Upload release assets
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.tag_version.outputs.upload_url }}
   #         asset_name: '${{runner.os}}-${{matrix.OUT_FILE_NAME}}'
   #         asset_path: './dist/${{matrix.OUT_FILE_NAME}}'
   #         asset_content_type: ${{ matrix.ASSET_MIME }}
