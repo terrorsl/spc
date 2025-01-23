@@ -1,12 +1,21 @@
 import reportlab.platypus
+from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
-from reportlab.platypus import PageTemplate, Frame, Paragraph, PageBreak, Table, TableStyle
+from reportlab.platypus import PageTemplate, Frame, Paragraph, PageBreak, Table, TableStyle, FrameBreak, KeepTogether, \
+    NextPageTemplate
 from reportlab.lib.enums import TA_LEFT, TA_CENTER
 
 from spc.spc_yaml import TitleApprove
-from spc.standard.doc import SPCDocument, SPCChapter, SPCTable, SPCTitle, SPCList
+from spc.standard.doc import SPCDocument, SPCChapter, SPCTable, SPCTitle, SPCList, SPCImage
+
+
+class G105Image(SPCImage):
+    def __init__(self, caption, filename, reference, image_index):
+        super().__init__(caption=caption, filename=filename, reference=reference, image_index=image_index)
+        self.caption = f'Рисунок {image_index} - {caption}'
+        self.caption_alignment = TA_CENTER
 
 
 class G105Title(SPCTitle):
@@ -18,7 +27,7 @@ class G105Title(SPCTitle):
     def build(self, font_name, font_size):
         style = ParagraphStyle(name='title', fontName=font_name, fontSize=font_size, alignment=TA_CENTER,
                                spaceAfter=10 * mm)
-        company = Paragraph(f'<b>{self.company}</b>', style=style)
+        company = Paragraph(f'{self.company}', style=style)
         if isinstance(self.__approve, str):
             data = [['Утвержден', ''], [self.__approve, '']]
         else:
@@ -28,18 +37,35 @@ class G105Title(SPCTitle):
                     ['(подпись)', '(подпись)']]
         approve = Table(data, hAlign='CENTER', colWidths=(A4[0] - 40 * mm)/2, spaceAfter=10 * mm, style=TableStyle(
             [
-                ('FONT', (0, 0), (-1, -1), font_name, font_size)
+                ('FONT', (0, 0), (-1, -1), font_name, font_size),
+                # ('GRID', (0, 0), (-1, -1), 1, colors.black)
             ]
         ))
 
-        end = [Paragraph(text=self.document_type, style=style), PageBreak()]
+        end = [PageBreak()]
         if not isinstance(self.__approve, str) and len(self.__agrees) > 1:
             data = [
                 ['СОГЛАСОВАНО', '']
             ]
             if (len(self.__agrees) - 1) % 2:
                 self.__agrees.append(TitleApprove(**{'name': '', 'job_name': ''}))
+
+            tableStyle = TableStyle(
+                [
+                    ('FONT', (0, 0), (-1, -1), font_name, font_size),
+                    # ('SPAN', (0, 19), (1, 19)),
+                    # ('ALIGN', (0, 19), (1, 19), 'CENTER')
+                ]
+            )
             for index in range(1, len(self.__agrees)-1, 2):
+                if index == 13:
+                    data.append(['', ''])
+                    data.append(['Продолжение на следующем листе', ''])
+                    data.append(['Продолжение титульного листа', ''])
+                    tableStyle.add('SPAN', (0, int(index/2)*3+2), (1, int(index/2)*3+2))
+                    tableStyle.add('ALIGN', (0, int(index / 2) * 3 + 2), (1, int(index / 2) * 3 + 2), 'CENTER')
+                    tableStyle.add('SPAN', (0, int(index / 2) * 3 + 3), (1, int(index / 2) * 3 + 3))
+                    tableStyle.add('ALIGN', (0, int(index / 2) * 3 + 3), (1, int(index / 2) * 3 + 3), 'CENTER')
                 if len(self.__agrees[index+1].job_name):
                     data.append([self.__agrees[index].job_name, self.__agrees[index + 1].job_name])
                     data.append([f'__________ {self.__agrees[index].name}', f'__________ {self.__agrees[index+1].name}'])
@@ -48,14 +74,15 @@ class G105Title(SPCTitle):
                     data.append([self.__agrees[index].job_name, ''])
                     data.append([f'_________ {self.__agrees[index].name}', ''])
                     data.append(['(подпись)', ''])
-            end = [Paragraph(text=self.document_type, style=style), Table(data, colWidths=(A4[0] - 40 * mm)/2, style=TableStyle(
-                [
-                    ('FONT', (0, 0), (-1, -1), font_name, font_size)
-                ]
-            )), PageBreak()]
+            table = Table(data, colWidths=(A4[0] - 40 * mm)/2, style=tableStyle)
+            if len(self.__agrees) > 12:
+                end = [NextPageTemplate('portrait'), table, PageBreak('portrait')]
+            else:
+                end = [table, PageBreak('portrait')]
 
-        doc_name = Paragraph(f'<b>{self.caption}</b>', style=style)
-        return [company, approve, doc_name]+end
+        doc_name = Paragraph(f'{self.caption}', style=style)
+        doc_type = Paragraph(text=self.document_type, style=style)
+        return [company, approve, FrameBreak(), KeepTogether([doc_name, doc_type]), FrameBreak()]+end
 
 
 class G105Table(SPCTable):

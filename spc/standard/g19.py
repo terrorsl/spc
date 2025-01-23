@@ -5,10 +5,12 @@ from reportlab.lib.fonts import tt2ps
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
-from reportlab.platypus import PageTemplate, Frame, Paragraph, PageBreak, Table, TableStyle
+from reportlab.platypus import PageTemplate, Frame, Paragraph, PageBreak, Table, TableStyle, Spacer, KeepTogether, \
+    FrameBreak, NextPageTemplate, NotAtTopPageBreak, IndexingFlowable
 from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT
+from reportlab.platypus.tableofcontents import SimpleIndex
 
-from spc.standard.doc import SPCDocument, SPCChapter, SPCTitle, SPCItem, SPCList, SPCImage
+from spc.standard.doc import SPCDocument, SPCChapter, SPCTitle, SPCItem, SPCList, SPCImage, TotalPage
 
 
 class G19Image(SPCImage):
@@ -37,6 +39,35 @@ class G19Chapter(SPCChapter):
         pass
 
 
+class G19Specification(SPCItem):
+    def __init__(self):
+        self.__data = [['Обозначение', 'Наименование', 'Примечание']]
+        super().__init__()
+
+    def append(self, row):
+        if len(row) != 3:
+            raise Exception('row size must 3')
+        self.__data.append(row)
+
+    def build(self, font_name, font_size):
+        style_table = TableStyle([
+            ('FONT', (0, 0), (-1, -1), font_name, font_size),
+            ('GRID', (0, 0), (-1, -1), 2, colors.black),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER')
+            ]
+        )
+        # specials = ['Документация', 'Комплексы']
+        # for row in self.__data:
+        #     if row[1] in specials:
+
+        table = Table(self.__data, colWidths=[80 * mm, 70 * mm, 30 * mm], style=style_table, repeatRows=1)
+        result = [table]
+        return result
+
+    def replace_special(self):
+        pass
+
+
 class G19ChangeRegistrationSheet(SPCItem):
     def build(self, font_name, font_size):
         style_table = TableStyle([
@@ -58,13 +89,14 @@ class G19ChangeRegistrationSheet(SPCItem):
             ['Лист регистрации изменений', '', '', '', '', '', '', '', '', ''],
             ['Номера листов(страниц)', '', '', '', '', 'Всего\nлистов\n(страниц)\nв докум', '№\nдокумента',
              'Входящий\n№ сопрово\nдительного\nдокумента\nи дата', 'Подп.', 'Да\nта'],
-            ['Изм.', 'изменен\nных', 'заменен\nных', 'новых', 'анули\nрован\nных', '', ''],
+            ['Изм.', 'изменен\nных', 'заменен\nных', 'новых', 'анули\nрован\nных', '', '', '', '', ''],
             [],
             [],
             [],
             [],[],[],[],[],[],[], [],[],[],[],[],[],[], [],[],[],[],[],[],[], [],[],[],[],[],[]
         ]
-        table = Table(data, style=style_table)
+        table = Table(data, colWidths=[10*mm, 20*mm, 20*mm, 20*mm, 20*mm, 20*mm, 25*mm, 25*mm, 15*mm, 12*mm],
+                      style=style_table)
         return [table]
 
     def replace_special(self):
@@ -80,36 +112,56 @@ class G19Title(SPCTitle):
     def __init__(self, company, caption, doc_type, approve_doc):
         super().__init__(company, caption, doc_type)
         self.__approve_doc = approve_doc
+        self.__page_count = 0
+
+    @property
+    def page_count(self):
+        return self.__page_count
+
+    @page_count.setter
+    def page_count(self, v):
+        self.__page_count = v
 
     def build(self, font_name, font_size):
         style_center = ParagraphStyle(name='title_center', fontName=font_name, fontSize=font_size,
                                       alignment=TA_CENTER)
         style_left = ParagraphStyle(name='title_left', fontName=font_name, fontSize=font_size)
         style_right = ParagraphStyle(name='title_left', fontName=font_name, fontSize=font_size, alignment=TA_RIGHT)
-        style_3 = ParagraphStyle(name='3', parent=style_center, spaceBefore=20 * mm, spaceAfter=20 * mm)
-        style_5 = ParagraphStyle(name='5', parent=style_center, spaceBefore=20 * mm, spaceAfter=150 * mm)
-        result = []
+        style_3 = ParagraphStyle(name='3', parent=style_center, spaceBefore=40 * mm)
+        style_4 = ParagraphStyle(name='4', parent=style_center, spaceBefore=20 * mm)
+        style_5 = ParagraphStyle(name='5', parent=style_center, spaceBefore=20 * mm, spaceAfter=120 * mm)
+        style_7 = ParagraphStyle(name='5', parent=style_center, spaceBefore=1 * mm, spaceAfter=1 * mm)
+        result = [NotAtTopPageBreak('title')]
+
         # field 1
         if self.company:
             result.append(Paragraph(self.company, style=style_center))
         result.append(Paragraph(f'Утвержден<br/>{self.__approve_doc}', style=style_left))
+
+        result.append(FrameBreak())
         # field 2
         # не заполняют
         # field 3
-        result.append(Paragraph(f'<b>{self.caption}</b>', style=style_3))
+        result.append(Paragraph(f'{self.caption}', style=style_3))
         # field 4
-        result.append(Paragraph(self.document_type, style=style_center))
+        result.append(Paragraph(self.document_type, style=style_4))
         # filed 5
-        result.append(Paragraph('<b>Листов</b>', style=style_5))
+        # _5 = Paragraph(f'<b>Листов {self.__page_count}</b>', style=style_5)
+        result.append(TotalPage(font_name, font_size))
+        # result.append(_5)
         # field 6
         # не заполняют
         # field 7
-        result.append(Paragraph(str(datetime.datetime.now().date().year), style=style_center))
+        result.append(FrameBreak())
+        result.append(Spacer(0, 70 * mm))
+        _7 = Paragraph(str(datetime.datetime.now().date().year), style=style_7)
+        result.append(_7)
         # field 8
         # field 9
         # field 10
-        result.append(Paragraph('Литера', style=style_right))
-        result.append(PageBreak())
+        _10 = Paragraph('Литера', style=style_right)
+        result.append(_10)
+        result.append(PageBreak('portrait'))
 
         return result
 
@@ -132,16 +184,39 @@ class G19(SPCDocument):
         super().__init__(filename, font, font_family)
 
         pageTemplates = [
+            PageTemplate(id='title', frames=[
+                Frame(20 * mm, (5 + 2*93) * mm, A4[0] - 25 * mm, 93 * mm, showBoundary=debug),
+                Frame(20 * mm, (5+93) * mm, A4[0] - 25 * mm, 93 * mm, showBoundary=debug),
+                Frame(20 * mm, 5 * mm, A4[0] - 25 * mm, 93 * mm, showBoundary=debug)
+            ], onPage=self.onPage),
             PageTemplate(id='portrait', frames=[
                 Frame(20 * mm, 15 * mm, A4[0] - 30 * mm, A4[1] - 40 * mm, showBoundary=debug)
             ], onPage=self.onPage),
             PageTemplate(id='landscape', frames=[
                 Frame(20 * mm, 15 * mm, A4[1] - 30 * mm, A4[0] - 40 * mm, showBoundary=debug)
-            ], onPage=self.onPage, pagesize=landscape(A4))
+            ], onPage=self.onPage, pagesize=landscape(A4)),
         ]
         self.addPageTemplates(pageTemplates=pageTemplates)
 
+        self.__doc_type = ''
+        self.__page_count = 0
+        self.__pass = 0
+        self.setProgressCallBack(self.onProgress)
+
+    def onProgress(self, param, value):
+        print(f'{param} - {value}')
+        if param == 'PASS':
+            self.__pass = value
+        elif param == 'PAGE' and self.__pass == 1:
+            self.__page_count = value
+        elif param == 'FINISHED':
+            for item in self.flowable:
+                if isinstance(item, TotalPage):
+                    item.page_count = self.__page_count
+
     def check(self, item):
+        if isinstance(item, G19Title):
+            self.__doc_type = item.document_type
         return True
 
     def save(self):
@@ -177,4 +252,6 @@ class G19(SPCDocument):
             canvas.drawString(330, -35, 'Подп. и дата')
             canvas.rotate(-90)
         else:
+            canvas.setFont(self.font_name, 12)
             canvas.drawString(width/2, height-15, str(doc.page))
+            canvas.drawCentredString(width / 2, height - 25, self.__doc_type)

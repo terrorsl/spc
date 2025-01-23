@@ -13,8 +13,8 @@ from reportlab.lib.units import mm
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.pdfmetrics import registerFontFamily
 from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.platypus import BaseDocTemplate, Paragraph, Image, PageBreak, Table, TableStyle
-from reportlab.platypus.tableofcontents import TableOfContents
+from reportlab.platypus import BaseDocTemplate, Paragraph, Image, PageBreak, Table, TableStyle, IndexingFlowable
+from reportlab.platypus.tableofcontents import TableOfContents, SimpleIndex, ReferenceText
 from reportlab.lib.enums import TA_JUSTIFY, TA_CENTER, TA_LEFT
 
 
@@ -65,7 +65,7 @@ class SPCImage(SPCItem):
         self.image_index = image_index
 
     def build(self, font_name, font_size):
-        style = ParagraphStyle(name='', fontName=font_name, fontSize=font_size, alignment=self.caption_alignment)
+        style = ParagraphStyle(name='image_caption', fontName=font_name, fontSize=font_size, alignment=self.caption_alignment)
         return [Paragraph(f'<a name="{self.reference}"/>', style=style),
                 Image(filename=self.__filename), Paragraph(self.caption, style=style)]
 
@@ -181,7 +181,8 @@ class SPCTable(SPCItem):
         table_style = TableStyle([
             ('FONT', (0, 0), (-1, -1), font_name, font_size),
             ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER')
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            # ('BOX', (0,0), (-1, -1), 2, colors.black)
             # ('VALIGN', (5, 0), (5, -1), 'MIDDLE')
         ])
 
@@ -362,6 +363,41 @@ class SPCPageTemplate:
         self.__page_template = reportlab.platypus.PageTemplate(id, pagesize=pagesize)
 
 
+class TotalPage(IndexingFlowable):
+    def __init__(self, font_name, font_size):
+        super().__init__()
+
+        self.defaultTableStyle = \
+            TableStyle([
+                #('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                ('FONT', (0, 0), (-1, -1), font_name, font_size),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+                #('LEFTPADDING', (0, 0), (-1, -1), 0),
+            ])
+        self.page_count = 0
+        self.__para = 0
+        self.__isSatisfied = 0
+
+    def isSatisfied(self):
+        return self.__isSatisfied == 2
+
+    def beforeBuild(self):
+        if self.__isSatisfied < 2:
+            self.__isSatisfied += 1
+
+    def notify(self, kind, stuff):
+        print(kind)
+
+    def wrap(self, availWidth, availHeight):
+        self.__para = Table([['Листов', self.page_count]], style=self.defaultTableStyle)
+        return self.__para.wrap(availWidth, availHeight)
+
+    def drawOn(self, canvas, x, y, _sW=0):
+        self.__para.drawOn(canvas, x, y, _sW)
+        # print(x)
+        # self.canv.drawCentredString(x, y, 'Test')
+
+
 class SPCDocument(ABC, BaseDocTemplate):
     def __init__(self, filename, font: dict, font_family: dict):
         BaseDocTemplate.__init__(self, filename)
@@ -423,6 +459,10 @@ class SPCDocument(ABC, BaseDocTemplate):
     def items(self):
         return self.__items
 
+    @property
+    def flowable(self):
+        return self.__flowable
+
     def append(self, item):
         if self.check(item):
             if isinstance(item, SPCTable):
@@ -441,4 +481,5 @@ class SPCDocument(ABC, BaseDocTemplate):
     def save(self):
         for item in self.__items:
             self.__flowable += item.build(self.__font_name, self.__font_size)
+        #self.__flowable.append(TotalPage())
         self.multiBuild(self.__flowable)

@@ -9,11 +9,11 @@ from spc.standard.doc import SPCDocument, SPCTitle, SPCPageTemplate, SPCTableOfC
 
 class SimpleTitle(SPCTitle):
     def __init__(self, caption):
-        super().__init__('', caption)
+        super().__init__('', caption, '')
 
-    def build(self, font_name):
-        style = ParagraphStyle(name='Title', fontName=font_name, fontSize=14, alignment=TA_CENTER)
-        return [Paragraph(f'<b>{self.caption}</b>', style=style), PageBreak()]
+    def build(self, font_name, font_size):
+        style = ParagraphStyle(name='Title', fontName=font_name, fontSize=font_size, alignment=TA_CENTER)
+        return [Paragraph(f'{self.caption}', style=style), PageBreak()]
 
 
 class SimpleDoc(SPCDocument):

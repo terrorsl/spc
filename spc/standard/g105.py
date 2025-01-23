@@ -4,6 +4,7 @@ from reportlab.lib.units import mm
 from reportlab.pdfbase.pdfmetrics import getFont
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import PageTemplate, Frame
+from reportlab.pdfgen.canvas import Canvas
 
 from spc.standard.doc import SPCDocument
 from spc.standard.g105_no_border import G105Title
@@ -13,7 +14,15 @@ class G105Doc(SPCDocument):
     def __init__(self, filename, font, font_family, debug=False):
         super().__init__(filename, font, font_family)
 
+        title_height_frames = [157 * mm, 50 * mm, 80 * mm]
         pageTemplates = [
+            PageTemplate(id='title', frames=[
+                Frame(20 * mm, title_height_frames[0] + title_height_frames[1] + 5 * mm,
+                      A4[0] - 25 * mm, title_height_frames[2], showBoundary=debug),
+                Frame(20 * mm, title_height_frames[0] + 5 * mm,
+                      A4[0] - 25 * mm, title_height_frames[1], showBoundary=debug),
+                Frame(20 * mm, 5 * mm, A4[0] - 25 * mm, title_height_frames[0], showBoundary=debug)
+            ], onPage=self.onPage),
             PageTemplate(id='portrait', frames=[
                 Frame(20 * mm, 20 * mm, A4[0] - 25 * mm, A4[1] - 30 * mm, showBoundary=debug)
             ], onPage=self.onPage),
@@ -23,10 +32,27 @@ class G105Doc(SPCDocument):
         ]
         self.addPageTemplates(pageTemplates=pageTemplates)
         self.__is_title = False
+        self.__title_page = 2
         self.__page_count = 0
+        self.__pass = 0
         self.__document_type = ''
+        self.__document_name = ''
+
+        self.setProgressCallBack(self.onProgress)
+
+    def onProgress(self, param, value):
+        # print(f'{param} - {value}')
+        if param == 'PASS':
+            self.__pass = value
+        elif param == 'PAGE' and self.__pass == 1:
+            self.__page_count = value
+        elif param == 'SIZE_EST':
+            pass
 
     def check(self, item):
+        if isinstance(item, G105Title):
+            self.__document_name = item.caption
+            self.__document_name = self.__document_name.replace('<br/>', '\n')
         return True
 
     def save(self):
@@ -37,11 +63,11 @@ class G105Doc(SPCDocument):
             item.replace_special()
         super().save()
 
-    def onPage(self, canvas, doc):
-        self.__page_count += 1
+    def onPage(self, canvas: Canvas, doc):
+        # self.__page_count += 1
         x = 20 * mm
         y = 5 * mm
-        if self.pageTemplate.id == 'portrait':
+        if self.pageTemplate.id == 'portrait' or self.pageTemplate.id == 'title':
             width = A4[0]
             height = A4[1]
         else:
@@ -102,6 +128,11 @@ class G105Doc(SPCDocument):
             canvas.drawString(A4[0] - 182 * mm, 31 * mm, 'Лист')
             canvas.drawString(A4[0] - 190 * mm, 31 * mm, 'Изм.')
 
+            canvas.drawString(A4[0] - 189 * mm, 26 * mm, 'Разраб.')
+            canvas.drawString(A4[0] - 189 * mm, 21 * mm, 'Пров.')
+            canvas.drawString(A4[0] - 189 * mm, 11 * mm, 'Н. контр.')
+            canvas.drawString(A4[0] - 189 * mm, 6 * mm, 'Утв.')
+
             canvas.line(A4[0] - 55 * mm, 20 * mm, A4[0] - 5 * mm, 20 * mm)
             canvas.line(A4[0] - 55 * mm, 25 * mm, A4[0] - 5 * mm, 25 * mm)
 
@@ -114,6 +145,10 @@ class G105Doc(SPCDocument):
             canvas.drawCentredString(A4[0] - 15 * mm, 26 * mm, 'Листов')
             canvas.drawCentredString(A4[0] - 35 * mm, 21 * mm, str(canvas.getPageNumber()))
             canvas.drawCentredString(A4[0] - 15 * mm, 21 * mm, str(self.__page_count))
+
+            canvas.setFontSize(14)
+            canvas.drawCentredString(width - 70 * mm, 35 * mm, self.__document_type)
+            canvas.setFontSize(10)
         else:
             canvas.line(width - 190 * mm, 20 * mm, width - 5 * mm, 20 * mm)
             canvas.line(width - 15 * mm, 13 * mm, width - 5 * mm, 13 * mm)
@@ -138,6 +173,10 @@ class G105Doc(SPCDocument):
             canvas.drawString(width - 172 * mm, 6 * mm, '№ докум.')
             canvas.drawString(width - 182 * mm, 6 * mm, 'Лист')
             canvas.drawString(width - 190 * mm, 6 * mm, 'Изм.')
+
+            canvas.setFontSize(14)
+            canvas.drawCentredString(width - 70 * mm, 10 * mm, self.__document_type)
+            canvas.setFontSize(10)
 
             # canvas.drawString(A4[0] - 125 * mm, 6 * mm, self.__document_type)
         canvas.drawString(width - 35 * mm, 1 * mm, 'Формат A4')

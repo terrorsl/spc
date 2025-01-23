@@ -1,6 +1,6 @@
 from typing import List, Optional, Union, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator, root_validator
 
 
 class Font(BaseModel):
@@ -16,19 +16,33 @@ class FontFamily(BaseModel):
 
 
 class Config(BaseModel):
-    standard: Literal['g105', 'g105_no_border', 'simple', 'g19']
+    standard: Literal['g2', 'g2_no_border', 'simple', 'g19']
     output: str
     font: FontFamily
     table_of_content: Optional[str] = ''
 
 
 class Item(BaseModel):
-    type: Literal['image', 'markdown', 'table']
+    type: Literal['image', 'markdown', 'table', 'specification']
     name: str
+    caption: Optional[str]
+    ref: Optional[str]
+
+    @root_validator
+    def check_type(cls, values):
+        if values['type'] == 'image':
+            if not values['caption'] or not values['ref']:
+                raise ValueError('"caption" and "ref" must be provided')
+        elif values['type'] == 'table':
+            if not values['ref']:
+                raise ValueError('"ref" must be provided')
+        return values
 
 
-class Appendix(Item):
+class Appendix(BaseModel):
     caption: str
+    type: Literal['обязательное', 'справочное', 'рекомендуемое']
+    items: List[Item]
 
 
 class TitleApprove(BaseModel):
@@ -45,7 +59,11 @@ class Title(BaseModel):
 
 
 class ApprovalSheet(BaseModel):
-    pass
+    company: str
+    caption: str
+    doc_type: str
+    approve: TitleApprove
+    agrees: List[TitleApprove]
 
 
 class SPC(BaseModel):

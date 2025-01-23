@@ -1,17 +1,16 @@
 import json
 from pathlib import Path
-from typing import List, Literal
+from typing import Literal
 
 import mistletoe
-import reportlab.platypus
 import yaml
 
 from spc.spc_yaml import SPC
-from spc.standard.doc import SPCParagraph, SPCChapter, SPCList, SPCTable, SPCItem, SPCAppendix, \
+from spc.standard.doc import SPCParagraph, SPCChapter, SPCList, SPCTable, SPCAppendix, \
     SPCPagebreak, SPCImage
 from spc.standard.g105 import G105Doc
-from spc.standard.g105_no_border import G105NoBorderDoc, G105Chapter, G105Table, G105Title, G105List
-from spc.standard.g19 import G19, G19Chapter, G19Title, G19List, G19Image
+from spc.standard.g105_no_border import G105NoBorderDoc, G105Chapter, G105Table, G105Title, G105List, G105Image
+from spc.standard.g19 import G19, G19Chapter, G19Title, G19List, G19Image, G19Specification
 from spc.standard.simple import SimpleDoc, SimpleTitle
 
 
@@ -32,15 +31,19 @@ class SimplePDFCreate:
                 'image': G19Image,
                 'table': G105Table
             },
-            'g105': {
+            'g2': {
                 'doc': G105Doc,
                 'title': G105Title,
-                'chapter': G105Chapter
+                'chapter': G105Chapter,
+                'image': G105Image,
+                'table': G105Table
             },
-            'g105_no_border': {
+            'g2_no_border': {
                 'doc': G105NoBorderDoc,
                 'title': G105Title,
-                'chapter': G105Chapter
+                'chapter': G105Chapter,
+                'image': G105Image,
+                'table': G105Table
             },
             'simple': {
                 'doc': SimpleDoc
@@ -51,10 +54,12 @@ class SimplePDFCreate:
         print(SPC.schema_json())
 
     def load(self, filename):
+        print(f'open project {filename}')
         with open(filename, 'r', encoding='utf-8') as file:
             path = Path(filename)
             self.__path = path.parent
             data = yaml.safe_load(file)
+            print(f'process')
             spc = SPC(**data['spc'])
             fonts = {}
             font_family = {spc.config.font.family: {}}
@@ -63,6 +68,7 @@ class SimplePDFCreate:
                 font_family[spc.config.font.family][item.type] = item.name
             self.__standard = spc.config.standard
 
+            print(f'create document')
             doc = self.create_document(f'{self.__path}/{spc.config.output}', fonts, font_family, spc.config.standard)
             doc.set_font(spc.config.font.family)
             doc.set_font_size(spc.config.font.size)
@@ -80,18 +86,30 @@ class SimplePDFCreate:
             if len(spc.config.table_of_content):
                 doc.set_table_of_content(spc.config.table_of_content)
 
+            print(f'process items')
             for item in spc.items:
                 if item.type == 'image':
-                    doc.append(SPCImage(caption='', filename=item.name, reference=''))
+                    image = self.standards[self.__standard]['image'](caption=item.caption, filename=f'{self.__path}/{item.name}',
+                                                                     reference=item.ref,
+                                                                     image_index=self.__image_count+1)
+                    self.__image_count += 1
+                    doc.append(image)
                 elif item.type == 'markdown':
                     _items = self.__load_markdown(f'{self.__path}/{item.name}')
                     for _item in _items:
                         doc.append(_item)
                 elif item.type == 'table':
-                    doc.append(self.__load_json_table(item.name))
+                    doc.append(self.__load_json_table(f'{self.__path}/{item.name}'))
+                elif item.type == 'specification':
+                    _items= self.__load_specification(f'{self.__path}/{item.name}')
+                    for _item in _items:
+                        doc.append(_item)
+                else:
+                    raise Exception(f'unknown type {item.type}')
 
             doc.append(SPCPagebreak())
 
+            print(f'process appendixes')
             for index, item in enumerate(spc.appendixes):
                 appendix_name = f'Приложение {index}'
                 self.__table_count = 0
@@ -104,20 +122,24 @@ class SimplePDFCreate:
                     else:
                         appendix_name = letters[index]
                     name = f'Приложение {appendix_name}'
-                    doc.append(SPCAppendix(name, item.caption, 'справочное'))
-                if item.type == 'image':
-                    doc.append(SPCImage(caption='', filename=item.name, reference=''))
-                elif item.type == 'markdown':
-                    _items = self.__load_markdown(f'{self.__path}/{item.name}')
-                    for _item in _items:
-                        if self.__standard != 'simple':
-                            if isinstance(_item, SPCChapter):
-                                _item.text = f'{appendix_name}.{_item.text}'
-                            elif isinstance(_item, G105Table):
-                                _item.table_index = f'{appendix_name}.{_item.table_index}'
-                        doc.append(_item)
-                elif item.type == 'table':
-                    doc.append(self.__load_json_table(item.name))
+                    doc.append(SPCAppendix(name, item.caption, item.type))
+                for app_item in item.items:
+                    if app_item.type == 'image':
+                        doc.append(SPCImage(caption='', filename=app_item.name, reference=''))
+                    elif app_item.type == 'markdown':
+                        _items = self.__load_markdown(f'{self.__path}/{app_item.name}')
+                        for _item in _items:
+                            if self.__standard != 'simple':
+                                if isinstance(_item, SPCChapter):
+                                    _item.text = f'{appendix_name}.{_item.text}'
+                                elif isinstance(_item, G105Table):
+                                    _item.table_index = f'{appendix_name}.{_item.table_index}'
+                            doc.append(_item)
+                    elif app_item.type == 'table':
+                        table = self.__load_json_table(app_item.name)
+                        table.table_index = f'{appendix_name}.{table.table_index}'
+                        doc.append(table)
+                doc.append(SPCPagebreak())
             return doc
 
     def __load_json_table(self, filename):
@@ -145,6 +167,8 @@ class SimplePDFCreate:
                     table.append(column)
                 else:
                     table.append(column)
+            for row in json_data['data']:
+                table.append(row)
             return table
 
     def __load_paragraph(self, parent: mistletoe.block_token.Paragraph):
@@ -179,7 +203,7 @@ class SimplePDFCreate:
                 result.append(SPCParagraph(text, self.__doc.on_replace))
                 text = ''
                 reference = child.children[0].content if len(child.children) else '_'
-                image = self.standards[self.__standard]['image'](child.title, child.src,
+                image = self.standards[self.__standard]['image'](child.title, f'{self.__path}/{child.src}',
                                                                  reference, self.__image_count+1)
                 self.__image_count += 1
                 result.append(image)
@@ -205,18 +229,32 @@ class SimplePDFCreate:
                     result.append(self.__load_list(item, sub_list + 1))
         return result
 
-    def __load_table(self, parent: mistletoe.block_token.Table):
+    def __load_table(self, parent: mistletoe.block_token.Table, is_specification=False):
         header = [h.children[0].content for h in parent.header.children]
         columns = ['str' for _i in parent.header.children]
         if self.__standard == 'simple':
-            table = SPCTable(header, columns)
+            table = SPCTable(header, self.__table_count+1, columns)
         else:
-            table = G105Table(header, columns, self.__table_count+1)
+            if is_specification:
+                table = G19Specification()
+            else:
+                table = G105Table(header, columns, self.__table_count+1)
         self.__table_count = self.__table_count + 1
         for row in parent.children:
             items = [v.children[0].content if len(v.children) else '' for v in row.children]
             table.append(items)
         return table
+
+    def __load_specification(self, filename):
+        items = []
+        with open(filename, 'r', encoding='utf-8') as file:
+            md_doc = mistletoe.Document(file)
+            for child in md_doc.children:
+                if isinstance(child, mistletoe.block_token.Table):
+                    table = self.__load_table(child, True)
+                    items.append(table)
+                print(child)
+        return items
 
     def __load_markdown(self, filename):
         items = []
@@ -266,10 +304,6 @@ class SimplePDFCreate:
                         chapter = self.standards[self.__standard]['chapter'](child.level,
                                                                              child.children[0].content, index)
                         items.append(chapter)
-                        # if self.__standard == 'g19':
-                        #     items.append(G19Chapter(child.level, child.children[0].content, index))
-                        # else:
-                        #     items.append(G105Chapter(child.level, child.children[0].content, index))
                 elif isinstance(child, mistletoe.block_token.List):
                     result = self.__load_list(child)
                     items.append(result)
@@ -281,5 +315,5 @@ class SimplePDFCreate:
         return items
 
     def create_document(self, filename, font, font_family,
-                        standard: Literal['simple', 'g105', 'g105_no_border', 'g19'] = 'simple'):
+                        standard: Literal['simple', 'g2', 'g2_no_border', 'g19'] = 'simple'):
         return self.standards[standard]['doc'](filename, font, font_family, False)
