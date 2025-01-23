@@ -88,7 +88,7 @@ jobs:
           pip install dist/spc-0.3.0-py3-none-any.whl
           # pyinstaller --onefile --name spc --add-data=font;spc/standard --hidden-import=spc ./spc_cmd/main.py
           pyinstaller --name spc ${{matrix.PYINSTALLER}} --hidden-import=spc ./spc_cmd/main.py
-          zip -r spc_${{matrix.PYINSTALLER}}.zip dist/${{matrix.OUTPUT_NAME}}
+          zip -r spc_${{matrix.OUTPUT_NAME}}.zip dist/${{matrix.OUTPUT_NAME}}
       #- name: Upload artifact
       #  id: artifacts
       #  uses: actions/upload-artifact@v4
