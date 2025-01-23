@@ -37,7 +37,7 @@ jobs:
           id: release
           uses: ncipollo/release-action@v1
           with:
-            tag: ${{tag_version.outputs.new_tag}}
+            tag: ${{steps.tag_version.outputs.new_tag}}
   # create_release:
   #   name: Create Release
   #   runs-on: ubuntu-latest
