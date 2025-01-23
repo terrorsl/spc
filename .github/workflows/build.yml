@@ -33,11 +33,12 @@ jobs:
           # python setup.py bdist_wheel
           # pyinstaller --onefile --name spc --add-data=font;spc/standard --hidden-import=spc ./spc_cmd/main.py
           pyinstaller --onefile --name spc --hidden-import=spc ./spc_cmd/main.py
-  deploy:    
+  deploy:
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - name: Download artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
         with:
           name: spc
       - name: Create release
