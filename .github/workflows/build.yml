@@ -45,7 +45,13 @@ jobs:
     runs-on: ${{matrix.os}}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            OUTPUT_NAME: spc
+          - os: macos-latest
+            OUTPUT_NAME: spc
+          - os: windows-latest
+            OUTPUT_NAME: spc.exe
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
@@ -66,7 +72,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: spc_${{matrix.os}}
-          path: dist/spc.exe
+          path: dist/${{matrix.OUTPUT_NAME}}
   #     - name: Upload release assets
   #       uses: actions/upload-release-asset@v1
   #       env:
