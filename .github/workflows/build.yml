@@ -50,6 +50,7 @@ jobs:
   #       draft: false
   #       prerelease: ${{ contains(github.ref, 'beta') }}
   build:
+    need: tag_version
     runs-on: ${{matrix.os}}
     strategy:
       matrix:
@@ -88,8 +89,8 @@ jobs:
       - name: Create release
         uses: ncipollo/release-action@v1
         with:
-          tag: ${{tag_version.steps.tag_version.output.new_tag}}
-          name: Release ${{ tag_version.tag_version.outputs.new_tag }}
+          tag: ${{need.tag_version.output.new_tag}}
+          name: Release ${{ need.tag_version.outputs.new_tag }}
   #     - name: Upload release assets
   #       uses: actions/upload-release-asset@v1
   #       env:
