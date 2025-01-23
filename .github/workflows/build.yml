@@ -31,4 +31,5 @@ jobs:
           pip install setuptools wheel pyinstaller
           pip install -r requirements.txt
           # python setup.py bdist_wheel
-          pyinstaller --onefile --name spc --add-data=font;spc/standard --hidden-import=spc ./spc_cmd/main.py
+          # pyinstaller --onefile --name spc --add-data=font;spc/standard --hidden-import=spc ./spc_cmd/main.py
+          pyinstaller --onefile --name spc --hidden-import=spc ./spc_cmd/main.py
