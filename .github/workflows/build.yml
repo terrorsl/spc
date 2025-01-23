@@ -90,9 +90,10 @@ jobs:
           pyinstaller --name spc ${{matrix.PYINSTALLER}} --hidden-import=spc ./spc_cmd/main.py
           # zip -r spc_${{matrix.os}}.zip dist/${{matrix.OUTPUT_NAME}}
       - name: Zip
-        uses: montudor/action-zip@v1
+        uses: vimtor/action-zip@v1.2
         with: 
-          args: zip -qq -r spc_${{matrix.os}}.zip dist/${{matrix.OUTPUT_NAME}}
+          files: dist/${{matrix.OUTPUT_NAME}}
+          dest: spc_${{matrix.os}}.zip
       #- name: Upload artifact
       #  id: artifacts
       #  uses: actions/upload-artifact@v4
