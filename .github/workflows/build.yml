@@ -84,6 +84,7 @@ jobs:
           # pyinstaller --onefile --name spc --add-data=font;spc/standard --hidden-import=spc ./spc_cmd/main.py
           pyinstaller --name spc ${{matrix.PYINSTALLER}} --hidden-import=spc ./spc_cmd/main.py
       - name: Upload artifact
+        id: artifacts
         uses: actions/upload-artifact@v4
         with:
           name: spc_${{matrix.os}}
@@ -92,7 +93,7 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           tag: ${{needs.tag_version.outputs.new_tag}}
-          artifacts: dist/${{matrix.OUTPUT_NAME}}
+          artifacts: ${{steps.artifacts.artifact-url}}
           #name: Release ${{ needs.tag_version.outputs.new_tag }}
   #     - name: Upload release assets
   #       uses: actions/upload-release-asset@v1
