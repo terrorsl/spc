@@ -4,28 +4,28 @@ from pydantic import BaseModel, Field, validator, root_validator
 
 
 class Font(BaseModel):
-    name: str
-    filename: str
-    type: Literal['normal', 'bold', 'italic']
+    name: str = Field(description='Font name')
+    filename: str = Field(description='Font file')
+    type: Literal['normal', 'bold', 'italic'] = Field(description='Font type')
 
 
 class FontFamily(BaseModel):
     family: str
-    size: int
+    size: int = Field(description='Font size')
     fonts: List[Font]
 
 
 class Config(BaseModel):
     standard: Literal['g2', 'g2_no_border', 'simple', 'g19']
-    output: str
+    output: str = Field(description="Output filename")
     font: FontFamily
     table_of_content: Optional[str] = ''
 
 
 class Item(BaseModel):
     type: Literal['image', 'markdown', 'table', 'specification']
-    name: str
-    caption: Optional[str]
+    name: str = Field(description='filename')
+    caption: Optional[str] = Field(description='Caption for image or table')
     ref: Optional[str]
 
     @root_validator
@@ -40,6 +40,7 @@ class Item(BaseModel):
 
 
 class Appendix(BaseModel):
+    name: Optional[str]
     caption: str
     type: Literal['обязательное', 'справочное', 'рекомендуемое']
     items: List[Item]
@@ -72,3 +73,6 @@ class SPC(BaseModel):
     # custom_title: str
     items: List[Item]
     appendixes: Optional[List[Appendix]] = []
+
+class SPCMain(BaseModel):
+    spc: SPC
