@@ -5,7 +5,11 @@ from typing import Literal
 import mistletoe
 import yaml
 
-from spc.spc_yaml import SPC
+from pydantic_yaml import parse_yaml_raw_as, to_yaml_str
+from json_schema_for_humans.generate import generate_from_filename
+from json_schema_for_humans.generation_configuration import GenerationConfiguration
+
+from spc.spc_yaml import SPC, SPCMain
 from spc.standard.doc import SPCParagraph, SPCChapter, SPCList, SPCTable, SPCAppendix, \
     SPCPagebreak, SPCImage
 from spc.standard.g105 import G105Doc
@@ -46,12 +50,17 @@ class SimplePDFCreate:
                 'table': G105Table
             },
             'simple': {
-                'doc': SimpleDoc
+                'doc': SimpleDoc,
+                'title': SimpleTitle,
             }
         }
 
     def print_scheme(self):
-        print(SPC.schema_json())
+        with open('schema.json', 'w') as file:
+            file.write(SPCMain.schema_json(indent=4))
+        # config = GenerationConfiguration()
+        generate_from_filename('schema.json', 'html/schema.html')
+        # print(SPC.schema_json())
 
     def load(self, filename):
         print(f'open project {filename}')
@@ -74,14 +83,15 @@ class SimplePDFCreate:
             doc.set_font_size(spc.config.font.size)
             self.__doc = doc
 
+            title = self.standards[self.__standard]['title']
             if spc.config.standard == 'simple':
-                doc.append(SimpleTitle(spc.title.caption))
+                doc.append(title(spc.title.caption))
             elif spc.config.standard == 'g19':
-                doc.append(self.standards[self.__standard]['title'](spc.title.company, spc.title.caption,
-                                                                    spc.title.doc_type, spc.title.approve))
+                doc.append(title(spc.title.company, spc.title.caption,
+                                 spc.title.doc_type, spc.title.approve))
             else:
-                doc.append(G105Title(spc.title.company, spc.title.caption,
-                                     spc.title.doc_type, spc.title.approve, spc.title.agrees))
+                doc.append(title(spc.title.company, spc.title.caption,
+                                 spc.title.doc_type, spc.title.approve, spc.title.agrees))
 
             if len(spc.config.table_of_content):
                 doc.set_table_of_content(spc.config.table_of_content)
@@ -111,7 +121,7 @@ class SimplePDFCreate:
 
             print(f'process appendixes')
             for index, item in enumerate(spc.appendixes):
-                appendix_name = f'Приложение {index}'
+                appendix_name = ''
                 self.__table_count = 0
                 if self.__standard == 'simple':
                     doc.append(SPCAppendix(appendix_name, item.caption, 'справочное'))
@@ -125,7 +135,7 @@ class SimplePDFCreate:
                     doc.append(SPCAppendix(name, item.caption, item.type))
                 for app_item in item.items:
                     if app_item.type == 'image':
-                        doc.append(SPCImage(caption='', filename=app_item.name, reference=''))
+                        doc.append(SPCImage(caption='', filename=app_item.name, reference='', image_index=0))
                     elif app_item.type == 'markdown':
                         _items = self.__load_markdown(f'{self.__path}/{app_item.name}')
                         for _item in _items:
