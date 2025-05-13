@@ -269,7 +269,7 @@ class SPCParagraph(SPCItem):
             return result
         style = ParagraphStyle(name="text", fontName=font_name, fontSize=font_size,
                                firstLineIndent=self.__indent,
-                               spaceAfter=6)
+                               spaceBefore=6 * mm)
         return [reportlab.platypus.Paragraph(self.__text, style=style)]
 
 
@@ -432,10 +432,16 @@ class SPCDocument(ABC, BaseDocTemplate):
         if flowable.__class__.__name__ == 'Paragraph':
             text = flowable.getPlainText()
             style = flowable.style.name
-            if style == 'Heading1':
-                level = 0
-            elif style == 'Heading2':
-                level = 1
+            start = style.find('Heading')
+            if start == 0:
+                style = style.replace('Heading', '')
+                level = int(style) - 1
+            # if style == 'Heading1':
+            #     level = 0
+            # elif style == 'Heading2':
+            #     level = 1
+            # elif style == 'Heading3':
+            #     level = 2
             elif style == 'appendix':
                 level = 0
                 start = text.find('(')

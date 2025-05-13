@@ -98,20 +98,21 @@ class SimplePDFCreate:
 
             print(f'process items')
             for item in spc.items:
+                full_path = f'{self.__path}/{item.name}'
                 if item.type == 'image':
-                    image = self.standards[self.__standard]['image'](caption=item.caption, filename=f'{self.__path}/{item.name}',
+                    image = self.standards[self.__standard]['image'](caption=item.caption, filename=full_path,
                                                                      reference=item.ref,
                                                                      image_index=self.__image_count+1)
                     self.__image_count += 1
                     doc.append(image)
                 elif item.type == 'markdown':
-                    _items = self.__load_markdown(f'{self.__path}/{item.name}')
+                    _items = self.__load_markdown(full_path)
                     for _item in _items:
                         doc.append(_item)
                 elif item.type == 'table':
-                    doc.append(self.__load_json_table(f'{self.__path}/{item.name}'))
+                    doc.append(self.__load_json_table(full_path))
                 elif item.type == 'specification':
-                    _items= self.__load_specification(f'{self.__path}/{item.name}')
+                    _items= self.__load_specification(full_path)
                     for _item in _items:
                         doc.append(_item)
                 else:
