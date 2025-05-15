@@ -20,6 +20,7 @@ class Config(BaseModel):
     output: str = Field(description="Output filename")
     font: FontFamily
     table_of_content: Optional[str] = ''
+    debug: Optional[bool] = False
 
 
 class Item(BaseModel):
@@ -71,7 +72,7 @@ class SPC(BaseModel):
     config: Config = Field()
     title: Title
     # custom_title: str
-    items: List[Item]
+    items: Optional[List[Item]]=[]
     appendixes: Optional[List[Appendix]] = []
 
 class SPCMain(BaseModel):

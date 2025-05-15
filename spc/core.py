@@ -9,12 +9,12 @@ from pydantic_yaml import parse_yaml_raw_as, to_yaml_str
 from json_schema_for_humans.generate import generate_from_filename
 from json_schema_for_humans.generation_configuration import GenerationConfiguration
 
-from spc.spc_yaml import SPC, SPCMain
+from spc.spc_yaml import SPC, SPCMain, TitleApprove
 from spc.standard.doc import SPCParagraph, SPCChapter, SPCList, SPCTable, SPCAppendix, \
     SPCPagebreak, SPCImage
 from spc.standard.g105 import G105Doc
 from spc.standard.g105_no_border import G105NoBorderDoc, G105Chapter, G105Table, G105Title, G105List, G105Image
-from spc.standard.g19 import G19, G19Chapter, G19Title, G19List, G19Image, G19Specification
+from spc.standard.g19 import G19, G19Chapter, G19Title, G19List, G19Image, G19Specification, G19NotificationSheet
 from spc.standard.simple import SimpleDoc, SimpleTitle
 
 
@@ -78,7 +78,8 @@ class SimplePDFCreate:
             self.__standard = spc.config.standard
 
             print(f'create document')
-            doc = self.create_document(f'{self.__path}/{spc.config.output}', fonts, font_family, spc.config.standard)
+            doc = self.create_document(f'{self.__path}/{spc.config.output}', fonts, font_family,
+                                       spc.config.standard, spc.config.debug)
             doc.set_font(spc.config.font.family)
             doc.set_font_size(spc.config.font.size)
             self.__doc = doc
@@ -87,6 +88,10 @@ class SimplePDFCreate:
             if spc.config.standard == 'simple':
                 doc.append(title(spc.title.caption))
             elif spc.config.standard == 'g19':
+                if isinstance(spc.title.approve, TitleApprove):
+                    doc.append(G19NotificationSheet(spc.title.company, spc.title.caption,
+                                 spc.title.doc_type, spc.title.approve, spc.title.agrees))
+                    return doc
                 doc.append(title(spc.title.company, spc.title.caption,
                                  spc.title.doc_type, spc.title.approve))
             else:
@@ -326,5 +331,5 @@ class SimplePDFCreate:
         return items
 
     def create_document(self, filename, font, font_family,
-                        standard: Literal['simple', 'g2', 'g2_no_border', 'g19'] = 'simple'):
-        return self.standards[standard]['doc'](filename, font, font_family, False)
+                        standard: Literal['simple', 'g2', 'g2_no_border', 'g19'] = 'simple', debug=False):
+        return self.standards[standard]['doc'](filename, font, font_family, debug)
