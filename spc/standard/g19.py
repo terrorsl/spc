@@ -6,7 +6,7 @@ from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
 from reportlab.platypus import PageTemplate, Frame, Paragraph, PageBreak, Table, TableStyle, Spacer, KeepTogether, \
-    FrameBreak, NextPageTemplate, NotAtTopPageBreak, IndexingFlowable
+    FrameBreak, NextPageTemplate, NotAtTopPageBreak, IndexingFlowable, NullActionFlowable
 from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT
 from reportlab.platypus.tableofcontents import SimpleIndex
 
@@ -103,6 +103,81 @@ class G19ChangeRegistrationSheet(SPCItem):
         pass
 
 
+class G19NotificationSheet(SPCTitle):
+    def __init__(self, company, caption, doc_type, approve, agrees):
+        super().__init__(company, caption, doc_type)
+        self.__approve = approve
+        self.__agrees = agrees
+
+    def build(self, font_name, font_size):
+        style_center = ParagraphStyle(name='title_center', fontName=font_name, fontSize=font_size,
+                                      alignment=TA_CENTER)
+        style_right = ParagraphStyle(name='title_left', fontName=font_name, fontSize=font_size, alignment=TA_RIGHT)
+        result = []
+        # field 1
+        if self.company:
+            result.append(Paragraph(self.company, style=style_center))
+        result.append(FrameBreak())
+        # field 2
+        data = [
+            ['', 'УТВЕРЖДАЮ'],
+            ['', self.__approve.job_name],
+            ['', f'_______________{self.__approve.name}'],
+            ['', '_______________20__г.']
+        ]
+        style_table = TableStyle([
+            ('FONT', (0, 0), (-1, -1), font_name, font_size),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            # ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+            # ('GRID', (0, 0), (-1, 2), 2, colors.black),
+            # ('BOX', (0, 0), (-1, -1), 2, colors.black)
+        ])
+        col_width = (A4[0] - (50 * mm)) / 2
+        table = Table(data, colWidths=[col_width, col_width], style=style_table)
+        result.append(table)
+
+        result.append(FrameBreak())
+        # field 3
+        result.append(Paragraph(f'{self.caption}', style=style_center))
+        result.append(FrameBreak())
+        # field 4
+        result.append(Paragraph(f'ЛИСТ УТВЕРЖДЕНИЯ<br/><br/>{self.document_type}', style=style_center))
+        result.append(FrameBreak())
+        # filed 5
+        # не заполняют
+        result.append(FrameBreak())
+        # field 6
+        data = [['', 'СОГЛАСОВАНО']]
+        for person in self.__agrees:
+            # data.append(['', person.job_name])
+            # data.append(['', f'_______________{person.name}'])
+            # data.append(['', '_______________20__г.'])
+            data.append(['', f'{person.job_name}\n_______________{person.name}\n_______________20__г.'])
+            data.append(['', ''])
+
+        style_table = TableStyle([
+            ('FONT', (0, 0), (-1, -1), font_name, font_size),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            # ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+            # ('GRID', (0, 0), (-1, 2), 2, colors.black),
+            # ('BOX', (0, 0), (-1, -1), 2, colors.black)
+        ])
+        col_width = (A4[0] - (50 * mm))/2
+        table = Table(data, colWidths=[col_width, col_width], style=style_table, repeatRows=1)
+        result.append(table)
+        result.append(FrameBreak())
+        # field 7
+        _7 = Paragraph(str(datetime.datetime.now().date().year), style=style_center)
+        result.append(_7)
+        result.append(FrameBreak())
+        # field 8
+        # field 9
+        # field 10
+        _10 = Paragraph('Литера', style=style_right)
+        result.append(_10)
+        return result
+
+
 class G19ApprovalSheet(SPCItem):
     def build(self, font_name, font_size):
         return []
@@ -128,34 +203,36 @@ class G19Title(SPCTitle):
         style_left = ParagraphStyle(name='title_left', fontName=font_name, fontSize=font_size)
         style_right = ParagraphStyle(name='title_left', fontName=font_name, fontSize=font_size, alignment=TA_RIGHT)
         style_3 = ParagraphStyle(name='3', parent=style_center, spaceBefore=40 * mm)
-        style_4 = ParagraphStyle(name='4', parent=style_center, spaceBefore=20 * mm)
+        style_4 = ParagraphStyle(name='4', parent=style_center, spaceBefore=10 * mm)
         style_5 = ParagraphStyle(name='5', parent=style_center, spaceBefore=20 * mm, spaceAfter=120 * mm)
-        style_7 = ParagraphStyle(name='5', parent=style_center, spaceBefore=1 * mm, spaceAfter=1 * mm)
+        style_7 = ParagraphStyle(name='7', parent=style_center, spaceBefore=1 * mm, spaceAfter=1 * mm)
         result = [NotAtTopPageBreak('title')]
 
         # field 1
         if self.company:
             result.append(Paragraph(self.company, style=style_center))
         result.append(Paragraph(f'Утвержден<br/>{self.__approve_doc}', style=style_left))
-
         result.append(FrameBreak())
         # field 2
         # не заполняют
+        result.append(FrameBreak())
         # field 3
-        result.append(Paragraph(f'{self.caption}', style=style_3))
+        result.append(Paragraph(f'{self.caption}', style=style_center))
+        result.append(FrameBreak())
         # field 4
-        result.append(Paragraph(self.document_type, style=style_4))
+        result.append(Paragraph(self.document_type, style=style_center))
+        result.append(FrameBreak())
         # filed 5
-        # _5 = Paragraph(f'<b>Листов {self.__page_count}</b>', style=style_5)
         result.append(TotalPage(font_name, font_size))
+        result.append(FrameBreak())
         # result.append(_5)
         # field 6
         # не заполняют
-        # field 7
         result.append(FrameBreak())
-        result.append(Spacer(0, 70 * mm))
+        # field 7
         _7 = Paragraph(str(datetime.datetime.now().date().year), style=style_7)
         result.append(_7)
+        result.append(FrameBreak())
         # field 8
         # field 9
         # field 10
@@ -185,9 +262,18 @@ class G19(SPCDocument):
 
         pageTemplates = [
             PageTemplate(id='title', frames=[
-                Frame(20 * mm, (5 + 2*93) * mm, A4[0] - 25 * mm, 93 * mm, showBoundary=debug),
-                Frame(20 * mm, (5+93) * mm, A4[0] - 25 * mm, 93 * mm, showBoundary=debug),
-                Frame(20 * mm, 5 * mm, A4[0] - 25 * mm, 93 * mm, showBoundary=debug)
+                Frame(20 * mm, A4[1] - 25 * mm, A4[0] - 30 * mm, 20 * mm, showBoundary=debug),
+                Frame(20 * mm, A4[1] - 85 * mm, A4[0] - 30 * mm, 60 * mm, showBoundary=debug),
+                Frame(20 * mm, A4[1] - 125 * mm, A4[0] - 30 * mm, 40 * mm, showBoundary=debug),
+                Frame(20 * mm, A4[1] - 145 * mm, A4[0] - 30 * mm, 20 * mm, showBoundary=debug),
+                Frame(20 * mm, A4[1] - 160 * mm, A4[0] - 30 * mm, 15 * mm, showBoundary=debug),
+                Frame(20 * mm, A4[1] - 265 * mm, A4[0] - 30 * mm, 105 * mm, showBoundary=debug),
+                Frame(20 * mm, A4[1] - 275 * mm, A4[0] - 30 * mm, 10 * mm, showBoundary=debug),
+                Frame(20 * mm, A4[1] - 285 * mm, A4[0] - 30 * mm, 10 * mm, showBoundary=debug)
+
+                # Frame(20 * mm, (5 + 2*93) * mm, A4[0] - 25 * mm, 93 * mm, showBoundary=debug),
+                # Frame(20 * mm, (5+93) * mm, A4[0] - 25 * mm, 93 * mm, showBoundary=debug),
+                # Frame(20 * mm, 5 * mm, A4[0] - 25 * mm, 93 * mm, showBoundary=debug)
             ], onPage=self.onPage),
             PageTemplate(id='portrait', frames=[
                 Frame(20 * mm, 15 * mm, A4[0] - 30 * mm, A4[1] - 40 * mm, showBoundary=debug)
@@ -196,6 +282,7 @@ class G19(SPCDocument):
                 Frame(20 * mm, 15 * mm, A4[1] - 30 * mm, A4[0] - 40 * mm, showBoundary=debug)
             ], onPage=self.onPage, pagesize=landscape(A4)),
         ]
+
         self.addPageTemplates(pageTemplates=pageTemplates)
 
         self.__doc_type = ''
@@ -220,10 +307,15 @@ class G19(SPCDocument):
         return True
 
     def save(self):
-        self.append(G19ChangeRegistrationSheet())
+        if not isinstance(self.items[0], G19NotificationSheet):
+            self.append(G19ChangeRegistrationSheet())
         for item in self.items:
             item.replace_special()
+        print('save')
         super().save()
+
+    def beforeDocument(self):
+        print('beforeDocument')
 
     def onPage(self, canvas, doc):
         width = A4[0]
